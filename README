@@ -1,0 +1,155 @@
+IP: localhost:3000
+GET:
+  Endpoints:
+    1. /orders -  Provides the list of all purchase orders. Optionally can be filtered using dates. 
+          input params: (optional)
+            from_po_date
+            to_po_date - If to_po_date is less than from_po_date, then the to_po_date will be ignored.
+          output: (json format)
+            po_num - purchase order num
+            po_date - po date (as entered by user)
+            delivery_date - delivery date (as entered by user)
+            customer_name - name of the customer 
+          Example usage:
+            1. /orders                                                    - provides the list of all puchase orders
+            2. /orders?from_po_date=2021-01-01                            - provides the list of all purchase orders >= 2021-01-01
+            3. /orders?from_po_date=2021-01-01&to_po_date=2021-12-31      - provides the list of all purchase orders between 2021-01-01 and 2021-12-31
+            4. /orders?from_po_date=2021-01-01&to_po_date=2020-12-31      - provides the list of all purchase orders >= 2021-01-01 (since to_po_date is less than from_po_date)
+            
+    2.  /orders/by_item_name - Provides the list of all purchase orders containing the specified characters in parameter
+            input params: (mandatory)
+              item_name - specify the item name enclosed with %. For ex., %ap% so that all this string will be searched at any place in the word.
+            output:
+              The output for this query will be in a json format, listing all the purchase_orders contating the item name specified in the input params. If more than one item is present in a purchase order, then                 the output will be grouped under the same PO number. Sample output will be as shown below
+              
+               {"purchase_orders":{
+                   "EE/PO/20-21/12395":
+                      [{"item_name":"orange","rate":"56.87","total_qty":1129,"despatched_qty":0},{"item_name":"banana","rate":"987.99","total_qty":129,"despatched_qty":0}],
+                   "EE/PO/21-22/14495":
+                      [{"item_name":"sapotta","rate":"11.11","total_qty":120,"despatched_qty":0},{"item_name":"grapes","rate":"65.65","total_qty":1200,"despatched_qty":0}]
+               }}
+               
+            Example usage:
+              1. /orders/by_item_name?item_name="%ap%"              - provides the list of all purchase orders with item name containing the letter ap
+              2. /orders/by_item_name?item_name="kiwi"              - provides the list of all purchase orders with item name "kiwi"
+
+POST:
+  Endpoints:
+    1. /orders/create_dc - Creates a new DC and returns the DC number to client
+          input query: (should be a JSON in the below format)
+              {
+                "po_num":"EE/PO/20-21/12395",
+                "receiver_type":1,
+                "customer_name":"Manickam",
+                "test_report_id":0,
+                "dc_date":"2023-10-31",
+                "remarks":"",
+                "items":[
+                    {
+                        "po_item_id":10,
+                        "dc_qty":3,
+                        "total_despatched_qty":23
+                    },
+                    {
+                        "po_item_id":11,
+                        "dc_qty":13,
+                        "total_despatched_qty":50
+                    }
+                ]
+            }
+          output: 
+            dc_num after successful DC creation
+            sample output: {"dc_num":6}
+            
+   2. /orders/create_credit_note - Creates a new credit note based on the rejected items in a DC
+          input query: (should be a JSON in the below format)
+              {
+                "dc_id":6,
+                "credit_note_date":"2023-05-28",
+                "total_rate":0,
+                "total_cgst":0,
+                "total_sgst":0,
+                "total_igst":0,
+                "total_amount":0,
+                "items":[
+                    {
+                        "po_item_id":10,
+                        "rejected_qty":3,
+                        "total_despatched_qty":20,
+                        "rate":0,
+                        "cgst":0,
+                        "sgst":0,
+                        "amount":0
+                    },
+                    {
+                        "po_item_id":11,
+                        "rejected_qty":13,
+                        "total_despatched_qty":37,
+                        "rate":0,
+                        "cgst":0,
+                        "sgst":0,
+                        "amount":0
+                    }
+                ]
+            }
+         output: (output will be the created credit note id)
+            credit_note_id after successful Credit Note creation
+            sample output: {"credit_note_id":2}
+            
+   3. /orders/create_invoice - Creates a new invoice and returns the created invoice number to client
+          input query: (should be a JSON in the below format)
+              {
+                  "po_num":"EE/PO/20-21/12395",
+                  "invoice_date":"2023-10-31",
+                  "gc_wc_required":true,                                // If this is set to true, then the below location needs to be provided. The location can be updated later also
+                                                                        // If this is set to false, then entry in GC_WC table will not be created.
+                  "gc_wc_location":"/EE/2023-24/GC_WC/GC_WC_001.pdf",
+                  "total_rate":0,
+                  "total_cgst":0,
+                  "total_sgst":0,
+                  "total_igst":0,
+                  "total_amount":0,
+                  "items":[
+                      {
+                          "po_item_id":10,
+                          "billing_qty":3,
+                          "price":0,
+                          "cgst":0,
+                          "sgst":0,
+                          "igst":0,
+                          "amount":0
+                      },
+                      {
+                          "po_item_id":11,
+                          "billing_qty":13,
+                          "price":0,
+                          "cgst":0,
+                          "sgst":0,
+                          "igst":0,
+                          "amount":0
+                      }
+                  ]
+              }
+         output: 
+            invoice_num after successful Invoice creation
+            sample output: {"inv_num":1}
+            
+   4. /orders/add_payment_details - Add payment details for an already created Invoice 
+          input query:
+              {
+                  "invoice_num":1,
+                  "payment_date":"2023-10-31",
+                  "payment_mode":0, // This values can be internally defined enum for different payment modes
+                  "amount":0,
+                  "remarks":""      // Remarks can contain the transaction id, bank details, etc.
+              }
+              
+          output: 
+              Output will be success or failure.
+              
+              
+              
+              
+         
+         
+            
